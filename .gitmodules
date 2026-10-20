@@ -1,0 +1,7 @@
+[submodule "ros_ws/src/moveit_resources"]
+	path = ros_ws/src/moveit_resources
+	url = https://github.com/moveit/moveit_resources.git
+	branch = ros2
+[submodule "ros_ws/src/topic_based_ros2_control"]
+	path = ros_ws/src/topic_based_ros2_control
+	url = https://github.com/PickNikRobotics/topic_based_ros2_control.git

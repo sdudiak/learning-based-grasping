@@ -1,0 +1,122 @@
+#usda 1.0
+(
+    defaultPrim = "ROS_Camera"
+)
+
+def OmniGraph "ROS_Camera"
+{
+    token evaluationMode = "Automatic"
+    token evaluator:type = "execution"
+    token fabricCacheBacking = "StageWithoutHistory"
+    int2 fileFormatVersion = (1, 9)
+    token pipelineStage = "pipelineStageSimulation"
+
+    def OmniGraphNode "OnPlaybackTick"
+    {
+        token node:type = "omni.graph.action.OnPlaybackTick"
+        int node:typeVersion = 2
+        custom uint outputs:tick (customData = { bool isExecution = 1 })
+    }
+
+    def OmniGraphNode "Context"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2Context"
+        int node:typeVersion = 2
+        custom bool inputs:useDomainIDEnvVar = 1
+        custom uint64 outputs:context
+    }
+
+    def OmniGraphNode "ColorRenderProduct"
+    {
+        token node:type = "isaacsim.core.nodes.IsaacCreateRenderProduct"
+        int node:typeVersion = 2
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/OnPlaybackTick.outputs:tick>
+        custom rel inputs:cameraPrim (customData = { dictionary omni = { dictionary graph = { string relType = "target" } } })
+        custom bool inputs:enabled = 1
+        custom uint inputs:width = 640
+        custom uint inputs:height = 480
+        custom uint outputs:execOut (customData = { bool isExecution = 1 })
+        custom token outputs:renderProductPath
+    }
+
+    def OmniGraphNode "ColorImage"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2CameraHelper"
+        int node:typeVersion = 2
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/ColorRenderProduct.outputs:execOut>
+        custom uint64 inputs:context
+        uint64 inputs:context.connect = </ROS_Camera/Context.outputs:context>
+        custom token inputs:renderProductPath
+        token inputs:renderProductPath.connect = </ROS_Camera/ColorRenderProduct.outputs:renderProductPath>
+        custom string inputs:nodeNamespace = "/isaac/cameara/wrist"
+        custom string inputs:frameId = "wrist_color_optical_frame"
+        custom string inputs:topicName = "color/image_raw"
+        custom bool inputs:useSystemTime = 0
+        custom token inputs:type = "rgb"
+    }
+
+    def OmniGraphNode "ColorCameraInfo"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2CameraInfoHelper"
+        int node:typeVersion = 1
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/ColorRenderProduct.outputs:execOut>
+        custom uint64 inputs:context
+        uint64 inputs:context.connect = </ROS_Camera/Context.outputs:context>
+        custom token inputs:renderProductPath
+        token inputs:renderProductPath.connect = </ROS_Camera/ColorRenderProduct.outputs:renderProductPath>
+        custom string inputs:nodeNamespace = "/isaac/cameara/wrist"
+        custom string inputs:frameId = "wrist_color_optical_frame"
+        custom string inputs:topicName = "color/camera_info"
+        custom bool inputs:useSystemTime = 0
+    }
+
+    def OmniGraphNode "DepthRenderProduct"
+    {
+        token node:type = "isaacsim.core.nodes.IsaacCreateRenderProduct"
+        int node:typeVersion = 2
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/OnPlaybackTick.outputs:tick>
+        custom rel inputs:cameraPrim (customData = { dictionary omni = { dictionary graph = { string relType = "target" } } })
+        custom bool inputs:enabled = 1
+        custom uint inputs:width = 640
+        custom uint inputs:height = 480
+        custom uint outputs:execOut (customData = { bool isExecution = 1 })
+        custom token outputs:renderProductPath
+    }
+
+    def OmniGraphNode "DepthImage"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2CameraHelper"
+        int node:typeVersion = 2
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/DepthRenderProduct.outputs:execOut>
+        custom uint64 inputs:context
+        uint64 inputs:context.connect = </ROS_Camera/Context.outputs:context>
+        custom token inputs:renderProductPath
+        token inputs:renderProductPath.connect = </ROS_Camera/DepthRenderProduct.outputs:renderProductPath>
+        custom string inputs:nodeNamespace = "/isaac/cameara/wrist"
+        custom string inputs:frameId = "wrist_depth_optical_frame"
+        custom string inputs:topicName = "depth/image_raw"
+        custom bool inputs:useSystemTime = 0
+        custom token inputs:type = "depth"
+    }
+
+    def OmniGraphNode "DepthCameraInfo"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2CameraInfoHelper"
+        int node:typeVersion = 1
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/DepthRenderProduct.outputs:execOut>
+        custom uint64 inputs:context
+        uint64 inputs:context.connect = </ROS_Camera/Context.outputs:context>
+        custom token inputs:renderProductPath
+        token inputs:renderProductPath.connect = </ROS_Camera/DepthRenderProduct.outputs:renderProductPath>
+        custom string inputs:nodeNamespace = "/isaac/cameara/wrist"
+        custom string inputs:frameId = "wrist_depth_optical_frame"
+        custom string inputs:topicName = "depth/camera_info"
+        custom bool inputs:useSystemTime = 0
+    }
+}

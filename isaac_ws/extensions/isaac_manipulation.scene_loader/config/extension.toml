@@ -1,0 +1,14 @@
+[package]
+version = "0.1.0"
+title = "Isaac Manipulation Scene Loader"
+description = "Opens a USD scene on startup"
+category = "Simulation"
+
+[dependencies]
+"omni.usd" = {}
+
+[[python.module]]
+name = "isaac_manipulation.scene_loader"
+
+[settings]
+exts."isaac_manipulation.scene_loader".scene = ""

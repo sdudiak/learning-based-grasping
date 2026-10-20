@@ -1,0 +1,81 @@
+#usda 1.0
+(
+    defaultPrim = "Franka"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "Franka" (
+    prepend variantSets = "cameras"
+    variants = {
+        string cameras = "enabled"
+    }
+    prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Robots/FrankaRobotics/FrankaPanda/franka.usd@
+)
+{
+    def Scope "Sensors"
+    {
+        def Xform "camera_wrist" (
+            prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Sensors/Intel/RealSense/rsd455.usd@
+        )
+        {
+            quatd xformOp:orient = (0.2705981271881199, -0.6532814468058861, -0.270598123497909, -0.6532814557148403)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.11122606094800153, 0.023226053457101988, 0.9142357018543181)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "RSD455"
+            {
+                quatd xformOp:orient = (1, 0, 0, 0)
+            }
+
+            def PhysicsFixedJoint "CameraWristJoint"
+            {
+                rel physics:body0 = </Franka/panda_hand>
+                rel physics:body1 = </Franka/Sensors/camera_wrist/RSD455>
+                point3f physics:localPos0 = (0.03284666, -2.1434243e-14, 0.011764238)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.70710677, -3.7810253e-9, 0.70710677, -3.7810257e-9)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+
+        def Xform "camera_top" (
+            prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Sensors/Intel/RealSense/rsd455.usd@
+        )
+        {
+            quatd xformOp:orient = (0.7071067811865476, 0, 0.7071067811865475, 0)
+            double3 xformOp:translate = (0.5, 0, 1.2)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def PhysicsFixedJoint "CameraTopJoint"
+            {
+                rel physics:body0 = </Franka/Sensors/camera_top>
+                rel physics:body1 = </Franka/Sensors/camera_top/RSD455>
+                uniform bool physics:excludeFromArticulation = 1
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+
+    variantSet "cameras" = {
+        "enabled" {
+            over "Sensors" (
+                active = true
+            )
+            {
+            }
+        }
+        "disabled" {
+            over "Sensors" (
+                active = false
+            )
+            {
+            }
+        }
+    }
+
+}

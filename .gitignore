@@ -1,0 +1,16 @@
+.pixi/
+# Python environments and generated files
+.venv/
+# Local settings and credentials
+.env
+
+# Isaac Sim runtime output; source assets remain tracked
+isaac_ws/cache/
+isaac_ws/logs/
+isaac_ws/output/
+*.log
+
+# ROS workspace build output
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/

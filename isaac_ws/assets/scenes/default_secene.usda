@@ -1,0 +1,232 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    prepend variantSets = "cameras"
+    variants = {
+        string cameras = "enabled"
+    }
+)
+{
+    def Xform "GroundPlane"
+    {
+        def Mesh "CollisionMesh"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+            point3f[] points = [(-25, -25, 0), (25, -25, 0), (25, 25, 0), (-25, 25, 0)]
+            color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+            texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "varying"
+            )
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Plane "CollisionPlane" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            uniform token purpose = "guide"
+        }
+    }
+
+    def Scope "lights"
+    {
+        def SphereLight "SphereLight" (
+            prepend apiSchemas = ["ShapingAPI"]
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            float inputs:intensity = 30000
+            float inputs:radius = 0.5
+            float inputs:shaping:cone:angle = 180
+            float inputs:shaping:cone:softness
+            float inputs:shaping:focus
+            color3f inputs:shaping:focusTint
+            asset inputs:shaping:ies:file
+            quatd xformOp:orient = (0.5000000000000001, 0.5, 0.49999999999999994, 0.5)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.9560869556265185e-63, -1.7618864968927754e-47, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+
+    def Scope "objects"
+    {
+        def "table" (
+            prepend payload = @../objects/table.usd@
+        )
+        {
+        }
+
+        def "cube" (
+            prepend payload = @../objects/cube.usd@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 1.035)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "Cube"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+            }
+        }
+    }
+
+    def Scope "robots"
+    {
+        def "franka" (
+            prepend payload = @../robots/custom_franka.usda@
+        )
+        {
+            string isaac:namespace (
+                displayName = "Namespace"
+                doc = "Namespace of the prim in Isaac Sim"
+            )
+            double3 xformOp:translate = (-0.5, 0, 1)
+        }
+    }
+
+    def Scope "graphs"
+    {
+        def "joint_control" (
+            prepend payload = @../graphs/joint_control.usda@
+        )
+        {
+            over "PublisherJointState"
+            {
+                custom rel inputs:targetPrim = </World/robots/franka>
+            }
+
+            over "ArticulationController"
+            {
+                custom rel inputs:targetPrim = </World/robots/franka>
+            }
+        }
+
+        def "camera_wrist" (
+            prepend payload = @../graphs/camera.usda@
+        )
+        {
+            over "ColorRenderProduct"
+            {
+                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_wrist/RSD455/Camera_OmniVision_OV9782_Color>
+            }
+
+            over "DepthRenderProduct"
+            {
+                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_wrist/RSD455/Camera_Pseudo_Depth>
+            }
+        }
+
+        def "camera_top" (
+            prepend payload = @../graphs/camera.usda@
+        )
+        {
+            over "ColorRenderProduct"
+            {
+                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_top/RSD455/Camera_OmniVision_OV9782_Color>
+            }
+
+            over "DepthRenderProduct"
+            {
+                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_top/RSD455/Camera_Pseudo_Depth>
+            }
+
+            over "ColorImage"
+            {
+                custom string inputs:nodeNamespace = "/isaac/cameara/top"
+                custom string inputs:frameId = "top_color_optical_frame"
+            }
+
+            over "ColorCameraInfo"
+            {
+                custom string inputs:nodeNamespace = "/isaac/cameara/top"
+                custom string inputs:frameId = "top_color_optical_frame"
+            }
+
+            over "DepthImage"
+            {
+                custom string inputs:nodeNamespace = "/isaac/cameara/top"
+                custom string inputs:frameId = "top_depth_optical_frame"
+            }
+
+            over "DepthCameraInfo"
+            {
+                custom string inputs:nodeNamespace = "/isaac/cameara/top"
+                custom string inputs:frameId = "top_depth_optical_frame"
+            }
+        }
+    }
+
+    variantSet "cameras" = {
+        "enabled" {
+            over "robots"
+            {
+                over "franka" (
+                    variants = {
+                        string cameras = "enabled"
+                    }
+                )
+                {
+                }
+            }
+
+            over "graphs"
+            {
+                over "camera_wrist" (
+                    active = true
+                )
+                {
+                }
+                over "camera_top" (
+                    active = true
+                )
+                {
+                }
+            }
+        }
+        "disabled" {
+            over "robots"
+            {
+                over "franka" (
+                    variants = {
+                        string cameras = "disabled"
+                    }
+                )
+                {
+                }
+            }
+
+            over "graphs"
+            {
+                over "camera_wrist" (
+                    active = false
+                )
+                {
+                }
+                over "camera_top" (
+                    active = false
+                )
+                {
+                }
+            }
+        }
+    }
+
+}
