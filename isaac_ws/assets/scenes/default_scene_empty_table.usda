@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    subLayers = [@default_secene.usda@]
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "objects"
+    {
+        over "cube" (
+            active = false
+        )
+        {
+        }
+    }
+}

@@ -24,8 +24,13 @@ torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/c
 isaacsim = { version = "==5.1.0", extras = ["all", "extscache"] }
 
 [tasks]
+save-masked-images = "python isaac_ws/dataset_generation/segmentation/save_masked_images.py"
+generate-dataset = "env -u PYTHONPATH -u OLD_PYTHONPATH python -u isaac_ws/dataset_generation/segmentation/generate_dataset.py"
+download-gso-objects = "python scripts/download_gso_objects.py"
+convert-gso-objects = "env -u PYTHONPATH -u OLD_PYTHONPATH python scripts/convert_assets.py"
 isaacsim = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions" }
 isaacsim-default-scene = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_secene.usda" }
+isaacsim-random-objects-scene = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_scene_empty_table.usda --enable isaac_manipulation.object_spawner --/exts/isaac_manipulation.object_spawner/auto_spawn=true --/exts/isaac_manipulation.object_spawner/show_ui=false" }
 
 [tasks.ros-build]
 cwd = "ros_ws"
@@ -38,4 +43,57 @@ depends-on = ["ros-build"]
 cwd = "ros_ws"
 cmd = """
 env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; source install/setup.bash; exec ros2 launch isaac_manipulation_bringup moveit.launch.py "$@"' --
+"""
+
+[environments]
+ml = { features = ["ml"], no-default-feature = true }
+segmentation = { features = ["segmentation"], no-default-feature = true }
+
+[feature.ml.dependencies]
+python = "3.11.*"
+
+[feature.ml.pypi-dependencies]
+torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+torchvision = { version = "==0.22.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+numpy = "==1.26.4"
+opencv-python = "==4.11.0.86"
+pillow = "==11.3.0"
+tensorboard = ">=2.18, <3"
+
+[feature.ml.activation.env]
+PYTHONPATH = ""
+
+[feature.ml.tasks]
+prepare-segmentation-dataset = "python -u -m ml_ws.segmentation.scripts.prepare_dataset"
+tensorboard = "tensorboard --logdir ml_ws/outputs/segmentation --host 127.0.0.1 --port 6006"
+prepare-segmentation-splits = "python -m ml_ws.segmentation.scripts.prepare_splits"
+train-segmentation = "python -u -m ml_ws.segmentation.scripts.train"
+segment-dataset = "python -u -m ml_ws.segmentation.scripts.predict"
+evaluate-segmentation = "python -m ml_ws.scripts.evaluation.evaluate_segmentation"
+compare-segmentation = "python -m ml_ws.scripts.evaluation.compare_segmentation"
+
+[feature.segmentation.dependencies]
+python = "3.12.*"
+
+[feature.segmentation.pypi-dependencies]
+grasping-segmentation = { path = "ml_ws", editable = true }
+torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+torchvision = { version = "==0.22.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+numpy = "==1.26.4"
+opencv-python-headless = "==4.11.0.86"
+pyyaml = ">=6, <7"
+lark = ">=1, <2"
+argcomplete = ">=3, <4"
+psutil = ">=5, <8"
+packaging = ">=24"
+setuptools = ">=68, <81"
+catkin-pkg = ">=1, <2"
+empy = "==3.3.4"
+importlib-metadata = ">=7"
+importlib-resources = ">=6"
+
+[feature.segmentation.tasks.segmentation-top-camera]
+cwd = "ros_ws"
+cmd = """
+bash --noprofile --norc -ec 'unset PYTHONPATH OLD_PYTHONPATH AMENT_PREFIX_PATH CMAKE_PREFIX_PATH COLCON_PREFIX_PATH LD_LIBRARY_PATH; source /opt/ros/jazzy/setup.bash; colcon build --symlink-install --packages-select isaac_manipulation_segmentation; source install/setup.bash; exec python /opt/ros/jazzy/bin/ros2 launch isaac_manipulation_segmentation top_camera.launch.py "checkpoint:=$PIXI_PROJECT_ROOT/ml_ws/outputs/segmentation/maskrcnn-v1/checkpoints/best.pt" "$@"' --
 """

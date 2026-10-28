@@ -1,5 +1,9 @@
 .pixi/
+/isaac_ws/assets/objects/gso/raw/
+/isaac_ws/assets/objects/gso/converted/
 # Python environments and generated files
+__pycache__/
+.pytest_cache/
 .venv/
 # Local settings and credentials
 .env
@@ -14,3 +18,21 @@ isaac_ws/output/
 ros_ws/build/
 ros_ws/install/
 ros_ws/log/
+
+# ML datasets, prepared tensors, experiments, predictions, and evaluation reports
+/ml_ws/datasets/
+/ml_ws/outputs/
+/ml_ws/**/weights/
+/ml_ws/**/checkpoints/
+/ml_ws/**/tensorboard/
+/ml_ws/**/*.pt
+/ml_ws/**/*.pth
+/ml_ws/**/*.ckpt
+/ml_ws/**/*.onnx
+/ml_ws/**/*.safetensors
+/ml_ws/**/events.out.tfevents.*
+
+# ML packaging artifacts
+/ml_ws/build/
+/ml_ws/dist/
+/ml_ws/*.egg-info/

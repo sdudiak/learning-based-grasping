@@ -1,0 +1,26 @@
+[package]
+version = "0.1.0"
+title = "Isaac Manipulation Object Spawner"
+description = "Spawn and settle GSO object piles in the current scene"
+category = "Simulation"
+
+[dependencies]
+"omni.usd" = {}
+"omni.timeline" = {}
+"omni.physx" = {}
+"isaacsim.core.prims" = {}
+"isaacsim.core.utils" = {}
+"omni.ui" = { optional = true }
+
+[[python.module]]
+name = "isaac_manipulation.object_spawner.extension"
+
+[settings]
+exts."isaac_manipulation.object_spawner".auto_spawn = false
+exts."isaac_manipulation.object_spawner".show_ui = true
+exts."isaac_manipulation.object_spawner".assets_directory = ""
+exts."isaac_manipulation.object_spawner".target_surface = "/World/objects/table"
+exts."isaac_manipulation.object_spawner".count = 10
+exts."isaac_manipulation.object_spawner".seed = 42
+exts."isaac_manipulation.object_spawner".spread = 0.03
+exts."isaac_manipulation.object_spawner".settle_timeout = 30.0

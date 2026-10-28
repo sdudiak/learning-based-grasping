@@ -1,0 +1,48 @@
+Panels: []
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Image
+    Name: Raw Image
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /top_camera_view/input_image
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Durability Policy: Volatile
+    Transport Hint: raw
+    Normalize Range: true
+    Min Value: 0
+    Max Value: 1
+    Median window: 5
+  - Class: rviz_default_plugins/Image
+    Name: Annotated Image
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /top_camera_view/annotated_image
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Transport Hint: raw
+    Normalize Range: true
+    Min Value: 0
+    Max Value: 1
+    Median window: 5
+  Global Options:
+    Fixed Frame: top_color_optical_frame
+    Frame Rate: 30
+    Background Color: 48; 48; 48
+  Tools: []
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+Window Geometry:
+  Width: 1400
+  Height: 800
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000200000000000002b600000320fc0200000001fb0000001200520061007700200049006d0061006700650100000000000003200000001a00ffffff00000001000002b500000320fc0200000001fb0000001e0041006e006e006f0074006100740065006400200049006d0061006700650100000000000003200000001a00ffffff000000010000032000000004000000040000000800000008fc00000000

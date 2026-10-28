@@ -1,2 +1,3 @@
 - Do not overcomment. Add comments only when necessary
 - Do not generate unnecessary code. Add features only when necessary
+- Edit READMEs only when specifically asked
