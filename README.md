@@ -36,4 +36,4 @@ These tasks use the `ml` environment automatically.
 | --- | --- |
 | `ros-build` | Build Panda bringup and its dependencies |
 | `ros-moveit` | Launch controllers, MoveIt, camera TF, and robot RViz |
-| `segmentation-top-camera` | Run top-camera inference and side-by-side raw/annotated RViz views |
+| `ros-segmentation-top-camera` | Run top-camera inference and side-by-side raw/annotated RViz views |

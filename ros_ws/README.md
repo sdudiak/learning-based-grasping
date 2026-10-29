@@ -28,7 +28,7 @@ Run these commands in separate terminals:
 
 ```bash
 pixi run isaacsim-random-objects-scene --enable isaacsim.ros2.bridge
-pixi run segmentation-top-camera
+pixi run ros-segmentation-top-camera
 ```
 
 The simulator needs converted GSO assets and automatically spawns objects on the empty table. The segmentation task opens side-by-side raw/annotated image panes in RViz. For the original scene, use `pixi run isaacsim-default-scene --enable isaacsim.ros2.bridge` and press **Play**.
@@ -36,7 +36,7 @@ The simulator needs converted GSO assets and automatically spawns objects on the
 The default checkpoint is `ml_ws/outputs/segmentation/maskrcnn-v1/checkpoints/best.pt`. Train/copy it locally, or override it:
 
 ```bash
-pixi run segmentation-top-camera \
+pixi run ros-segmentation-top-camera \
   checkpoint:=/absolute/path/to/best.pt \
   score_threshold:=0.7 decimation:=2
 ```
