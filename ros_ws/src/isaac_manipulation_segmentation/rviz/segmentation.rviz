@@ -7,7 +7,7 @@ Visualization Manager:
     Enabled: true
     Value: true
     Topic:
-      Value: /top_camera_view/input_image
+      Value: /segmentation_view/input_image
       Depth: 1
       History Policy: Keep Last
       Reliability Policy: Best Effort
@@ -22,7 +22,7 @@ Visualization Manager:
     Enabled: true
     Value: true
     Topic:
-      Value: /top_camera_view/annotated_image
+      Value: /segmentation_view/annotated_image
       Depth: 1
       History Policy: Keep Last
       Reliability Policy: Reliable
@@ -33,7 +33,7 @@ Visualization Manager:
     Max Value: 1
     Median window: 5
   Global Options:
-    Fixed Frame: top_color_optical_frame
+    Fixed Frame: world
     Frame Rate: 30
     Background Color: 48; 48; 48
   Tools: []

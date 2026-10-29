@@ -28,7 +28,7 @@ Run these commands in separate terminals:
 
 ```bash
 pixi run isaacsim-random-objects-scene --enable isaacsim.ros2.bridge
-pixi run ros-segmentation-top-camera
+pixi run ros-segmentation
 ```
 
 The simulator needs converted GSO assets and automatically spawns objects on the empty table. The segmentation task opens side-by-side raw/annotated image panes in RViz. For the original scene, use `pixi run isaacsim-default-scene --enable isaacsim.ros2.bridge` and press **Play**.
@@ -36,14 +36,14 @@ The simulator needs converted GSO assets and automatically spawns objects on the
 The default checkpoint is `ml_ws/outputs/segmentation/maskrcnn-v1/checkpoints/best.pt`. Train/copy it locally, or override it:
 
 ```bash
-pixi run ros-segmentation-top-camera \
+pixi run ros-segmentation \
   checkpoint:=/absolute/path/to/best.pt \
   score_threshold:=0.7 decimation:=2
 ```
 
-Application settings live in [`config/params.yaml`](src/isaac_manipulation_segmentation/config/params.yaml). Override them with `name:=value` or `params_file:=/absolute/path/to/params.yaml`, then restart the node. Common defaults: `device=cuda:0`, `score_threshold=0.5`, `mask_threshold=0.5`, `decimation=1`, and `publish_overlay_image=true`.
+Application settings live in [`config/params.yaml`](src/isaac_manipulation_segmentation/config/params.yaml). Override them with `name:=value` or `params_file:=/absolute/path/to/params.yaml`, then restart the node. Common defaults: `device=cuda:0`, `score_threshold=0.99`, `mask_threshold=0.5`, `decimation=1`, and `publish_overlay_image=true`.
 
-The top-camera launch selects `/isaac/cameara/top/color/image_raw`. Override `image_topic` to use `/isaac/cameara/wrist/color/image_raw` or another RGB stream. The spelling `cameara` matches the current USD graphs. The generic `segmentation.launch.py` defaults to the wrist camera and launches inference without RViz.
+The launch uses `/isaac/cameara/wrist/color/image_raw`; `image_topic:=...` overrides it for another RGB stream. The spelling `cameara` matches the USD graph. Pass `rviz:=false` to run inference alone. Direct ROS launch uses `segmentation.launch.py`.
 
 | Output topic | Contents |
 | --- | --- |

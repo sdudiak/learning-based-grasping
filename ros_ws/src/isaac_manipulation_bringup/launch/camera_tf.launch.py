@@ -5,9 +5,6 @@ from launch_ros.actions import Node
 # Mounts and optical offsets from custom_franka.usda and the Isaac Sim 5.1 D455 asset.
 # Wrist mount uses the fixed joint pose; USD camera axes are converted to ROS optical axes.
 TRANSFORMS = [
-    ('panda_link0', 'top_camera_link', (0.5, 0.0, 1.2, 0.7071067812, 0.0, 0.7071067812, 0.0)),
-    ('top_camera_link', 'top_color_optical_frame', (0.0, 0.0115, 0.0, -0.5, -0.5, 0.5, 0.5)),
-    ('top_camera_link', 'top_depth_optical_frame', (0.0, 0.0, 0.0, 0.5, 0.5, -0.5, -0.5)),
     ('panda_hand', 'wrist_camera_link', (0.0328466594, 0.0, 0.0117642377, 0.0, 0.7071067812, 0.0, 0.7071067812)),
     ('wrist_camera_link', 'wrist_color_optical_frame', (0.0, 0.0115, 0.0, -0.5, -0.5, 0.5, 0.5)),
     ('wrist_camera_link', 'wrist_depth_optical_frame', (0.0, 0.0, 0.0, 0.5, 0.5, -0.5, -0.5)),

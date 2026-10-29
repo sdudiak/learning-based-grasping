@@ -9,7 +9,7 @@ segmentation:
     overlay_image_topic: ~/overlay_image
     publish_overlay_image: true
     decimation: 1
-    score_threshold: 0.5
+    score_threshold: 0.99
     mask_threshold: 0.5
     tracking_iou_threshold: 0.3
     tracking_max_missed_frames: 5

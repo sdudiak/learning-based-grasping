@@ -134,44 +134,6 @@ def Xform "World" (
             }
         }
 
-        def "camera_top" (
-            prepend payload = @../graphs/camera.usda@
-        )
-        {
-            over "ColorRenderProduct"
-            {
-                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_top/RSD455/Camera_OmniVision_OV9782_Color>
-            }
-
-            over "DepthRenderProduct"
-            {
-                custom rel inputs:cameraPrim = </World/robots/franka/Sensors/camera_top/RSD455/Camera_Pseudo_Depth>
-            }
-
-            over "ColorImage"
-            {
-                custom string inputs:nodeNamespace = "/isaac/cameara/top"
-                custom string inputs:frameId = "top_color_optical_frame"
-            }
-
-            over "ColorCameraInfo"
-            {
-                custom string inputs:nodeNamespace = "/isaac/cameara/top"
-                custom string inputs:frameId = "top_color_optical_frame"
-            }
-
-            over "DepthImage"
-            {
-                custom string inputs:nodeNamespace = "/isaac/cameara/top"
-                custom string inputs:frameId = "top_depth_optical_frame"
-            }
-
-            over "DepthCameraInfo"
-            {
-                custom string inputs:nodeNamespace = "/isaac/cameara/top"
-                custom string inputs:frameId = "top_depth_optical_frame"
-            }
-        }
     }
 
     variantSet "cameras" = {
@@ -194,11 +156,6 @@ def Xform "World" (
                 )
                 {
                 }
-                over "camera_top" (
-                    active = true
-                )
-                {
-                }
             }
         }
         "disabled" {
@@ -216,11 +173,6 @@ def Xform "World" (
             over "graphs"
             {
                 over "camera_wrist" (
-                    active = false
-                )
-                {
-                }
-                over "camera_top" (
                     active = false
                 )
                 {
