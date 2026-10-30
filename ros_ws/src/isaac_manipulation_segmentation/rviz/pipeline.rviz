@@ -1,0 +1,91 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Global Options:
+    Fixed Frame: panda_link0
+    Background Color: 35; 35; 35
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+  - Class: rviz_default_plugins/PointCloud2
+    Name: Environment
+    Enabled: true
+    Topic:
+      Value: /pointcloud/environment
+      Reliability Policy: Reliable
+      Depth: 1
+    Size (m): 0.003
+    Style: Points
+    Color Transformer: FlatColor
+    Color: 160; 180; 200
+    Decay Time: 0
+  - Class: rviz_default_plugins/PointCloud2
+    Name: Target
+    Enabled: true
+    Topic:
+      Value: /pointcloud/target
+      Reliability Policy: Reliable
+      Depth: 1
+    Size (m): 0.005
+    Style: Points
+    Color Transformer: FlatColor
+    Color: 255; 70; 40
+    Decay Time: 0.5
+  - Class: rviz_default_plugins/PointStamped
+    Name: Target centroid
+    Enabled: true
+    Topic:
+      Value: /pointcloud/target_centroid
+      Depth: 1
+    Color: 255; 255; 0
+    History Length: 1
+  - Class: rviz_default_plugins/Marker
+    Name: Target bounding box
+    Enabled: true
+    Topic:
+      Value: /pointcloud/target_bbox
+      Depth: 1
+  - Class: rviz_default_plugins/Image
+    Name: Raw Image
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /isaac/cameara/wrist/color/image_raw
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Durability Policy: Volatile
+    Transport Hint: raw
+    Normalize Range: true
+    Min Value: 0
+    Max Value: 1
+    Median window: 5
+  - Class: isaac_manipulation_rviz/SelectableImage
+    Name: Annotated Image
+    Enabled: true
+    Image Topic: /segmentation/overlay_image
+    Mask Topic: /segmentation/instance_mask
+  - Class: rviz_default_plugins/TF
+    Name: TF (debug)
+    Enabled: false
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.0
+      Pitch: 0.6
+      Yaw: 0.8
+      Focal Point:
+        X: 0.5
+        Y: 0.0
+        Z: 0.1
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+Window Geometry:
+  Width: 1600
+  Height: 1000
+  Hide Left Dock: false
+  Hide Right Dock: false

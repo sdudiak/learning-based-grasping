@@ -9,12 +9,11 @@ platforms = [{ platform = "linux-64", glibc = "2.35" }]
 python = "3.11.*"
 
 [activation]
-scripts = ["/opt/ros/jazzy/setup.bash"]
+scripts = ["scripts/activate_ros.sh"]
 
 [activation.env]
 ROS_DISTRO = "jazzy"
 RMW_IMPLEMENTATION = "rmw_fastrtps_cpp"
-LD_LIBRARY_PATH = "${CONDA_PREFIX}/lib/python3.11/site-packages/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 [pypi-options]
 extra-index-urls = ["https://pypi.nvidia.com"]
@@ -28,14 +27,14 @@ save-masked-images = "python isaac_ws/dataset_generation/segmentation/save_maske
 generate-dataset = "env -u PYTHONPATH -u OLD_PYTHONPATH python -u isaac_ws/dataset_generation/segmentation/generate_dataset.py"
 download-gso-objects = "python scripts/download_gso_objects.py"
 convert-gso-objects = "env -u PYTHONPATH -u OLD_PYTHONPATH python scripts/convert_assets.py"
-isaacsim = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions" }
-isaacsim-default-scene = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_secene.usda" }
-isaacsim-random-objects-scene = { cmd = "env -u PYTHONPATH -u OLD_PYTHONPATH isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_scene_empty_table.usda --enable isaac_manipulation.object_spawner --/exts/isaac_manipulation.object_spawner/auto_spawn=true --/exts/isaac_manipulation.object_spawner/show_ui=false" }
+isaacsim = { cmd = "bash scripts/run_isaac.sh isaacsim --ext-folder isaac_ws/extensions" }
+isaacsim-default-scene = { cmd = "bash scripts/run_isaac.sh isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_secene.usda" }
+isaacsim-random-objects-scene = { cmd = "bash scripts/run_isaac.sh isaacsim --ext-folder isaac_ws/extensions --enable isaac_manipulation.scene_loader --/exts/isaac_manipulation.scene_loader/scene=isaac_ws/assets/scenes/default_scene_empty_table.usda --enable isaac_manipulation.object_spawner --/exts/isaac_manipulation.object_spawner/auto_spawn=true --/exts/isaac_manipulation.object_spawner/show_ui=false" }
 
 [tasks.ros-build]
 cwd = "ros_ws"
 cmd = """
-env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; exec colcon build --symlink-install --packages-up-to isaac_manipulation_bringup --cmake-args -DBUILD_TESTING=OFF -DPython3_EXECUTABLE=/usr/bin/python3'
+env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; exec colcon build --symlink-install --packages-up-to isaac_manipulation_bringup isaac_manipulation_pointcloud --cmake-args -DBUILD_TESTING=OFF -DPython3_EXECUTABLE=/usr/bin/python3'
 """
 
 [tasks.ros-moveit]
@@ -43,6 +42,20 @@ depends-on = ["ros-build"]
 cwd = "ros_ws"
 cmd = """
 env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; source install/setup.bash; exec ros2 launch isaac_manipulation_bringup moveit.launch.py "$@"' --
+"""
+
+[tasks.rviz]
+depends-on = ["ros-build"]
+cwd = "ros_ws"
+cmd = """
+env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; source install/setup.bash; exec ros2 launch isaac_manipulation_bringup rviz.launch.py "$@"' --
+"""
+
+[tasks.ros-pointcloud]
+depends-on = ["ros-build"]
+cwd = "ros_ws"
+cmd = """
+env -u PYTHONPATH -u OLD_PYTHONPATH -u AMENT_PREFIX_PATH -u CMAKE_PREFIX_PATH -u COLCON_PREFIX_PATH -u LD_LIBRARY_PATH PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash --noprofile --norc -ec 'source /opt/ros/jazzy/setup.bash; source install/setup.bash; exec ros2 launch isaac_manipulation_pointcloud pointcloud.launch.py "$@"' --
 """
 
 [environments]
@@ -94,3 +107,6 @@ importlib-resources = ">=6"
 
 [feature.segmentation.tasks.ros-segmentation]
 cmd = "python scripts/ros_segmentation.py"
+
+[feature.segmentation.tasks.ros-perception]
+cmd = "python scripts/ros_perception.py"

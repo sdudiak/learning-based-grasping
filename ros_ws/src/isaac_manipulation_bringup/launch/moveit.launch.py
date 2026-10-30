@@ -3,9 +3,8 @@ import xml.etree.ElementTree as ET
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -48,11 +47,7 @@ def generate_launch_description():
     feedback_remappings = [('joint_states', '/isaac/joint_states')]
     controllers = str(share / 'config/controllers.yaml')
     nodes = [
-        DeclareLaunchArgument('rviz', default_value='true'),
-        DeclareLaunchArgument('cameras', default_value='true'),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(str(share / 'launch/camera_tf.launch.py')),
-            condition=IfCondition(LaunchConfiguration('cameras'))),
+        DeclareLaunchArgument('rviz', default_value='false'),
         Node(package='robot_state_publisher', executable='robot_state_publisher',
              parameters=[config.robot_description, sim_time],
              remappings=feedback_remappings),

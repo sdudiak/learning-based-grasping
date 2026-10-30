@@ -17,21 +17,11 @@ Visualization Manager:
     Min Value: 0
     Max Value: 1
     Median window: 5
-  - Class: rviz_default_plugins/Image
+  - Class: isaac_manipulation_rviz/SelectableImage
     Name: Annotated Image
     Enabled: true
-    Value: true
-    Topic:
-      Value: /segmentation_view/annotated_image
-      Depth: 1
-      History Policy: Keep Last
-      Reliability Policy: Reliable
-      Durability Policy: Volatile
-    Transport Hint: raw
-    Normalize Range: true
-    Min Value: 0
-    Max Value: 1
-    Median window: 5
+    Image Topic: /segmentation_view/annotated_image
+    Mask Topic: /segmentation/instance_mask
   Global Options:
     Fixed Frame: world
     Frame Rate: 30

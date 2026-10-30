@@ -4,9 +4,10 @@ from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, OpaqueFunction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, EmitEvent, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -52,9 +53,14 @@ def launch_nodes(context):
 
 def generate_launch_description():
     arguments = [
-        DeclareLaunchArgument('rviz', default_value='true', choices=('true', 'false')),
+        DeclareLaunchArgument('rviz', default_value='false', choices=('true', 'false')),
         DeclareLaunchArgument('params_file', default_value=str(default_params_path())),
     ]
     arguments.extend(DeclareLaunchArgument(name, default_value='', description=f'Override YAML {name} ({default})')
                      for name, default in load_defaults().items())
-    return LaunchDescription([*arguments, OpaqueFunction(function=launch_nodes)])
+    share = Path(get_package_share_directory('isaac_manipulation_segmentation'))
+    return LaunchDescription([
+        *arguments,
+        IncludeLaunchDescription(PythonLaunchDescriptionSource(str(share / 'launch/camera_tf.launch.py'))),
+        OpaqueFunction(function=launch_nodes),
+    ])

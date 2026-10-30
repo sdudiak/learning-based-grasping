@@ -24,5 +24,6 @@
   <exec_depend>moveit_simple_controller_manager</exec_depend>
   <exec_depend>moveit_ros_visualization</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>isaac_manipulation_rviz</exec_depend>
   <export><build_type>ament_cmake</build_type></export>
 </package>

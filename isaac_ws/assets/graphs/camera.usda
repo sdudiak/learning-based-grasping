@@ -119,4 +119,21 @@ def OmniGraph "ROS_Camera"
         custom string inputs:topicName = "depth/camera_info"
         custom bool inputs:useSystemTime = 0
     }
+    def OmniGraphNode "AlignedDepthImage"
+    {
+        token node:type = "isaacsim.ros2.bridge.ROS2CameraHelper"
+        int node:typeVersion = 2
+        custom uint inputs:execIn (customData = { bool isExecution = 1 })
+        uint inputs:execIn.connect = </ROS_Camera/ColorRenderProduct.outputs:execOut>
+        custom uint64 inputs:context
+        uint64 inputs:context.connect = </ROS_Camera/Context.outputs:context>
+        custom token inputs:renderProductPath
+        token inputs:renderProductPath.connect = </ROS_Camera/ColorRenderProduct.outputs:renderProductPath>
+        custom string inputs:nodeNamespace = "/isaac/cameara/wrist"
+        custom string inputs:frameId = "wrist_color_optical_frame"
+        custom string inputs:topicName = "aligned_depth_to_color/image_raw"
+        custom bool inputs:useSystemTime = 0
+        custom token inputs:type = "depth"
+    }
+
 }

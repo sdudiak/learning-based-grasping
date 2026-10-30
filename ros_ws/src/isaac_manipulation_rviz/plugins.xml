@@ -1,0 +1,5 @@
+<library path="selectable_image">
+  <class name="isaac_manipulation_rviz/SelectableImage" type="isaac_manipulation_rviz::SelectableImage" base_class_type="rviz_common::Display">
+    <description>Click an annotated image to select its timestamp-matched segmentation instance.</description>
+  </class>
+</library>
