@@ -71,3 +71,38 @@ def test_idle_selection_loss_clear_and_nonblocking_services():
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+
+def test_static_robot_filter_precedes_partition(tmp_path):
+    mask_path = tmp_path / 'robot.npy'
+    np.save(mask_path, np.array([[True, False], [False, False]]))
+    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=false', '-p', 'output_frame:=camera',
+                     '-p', 'minimum_points:=1', '-p', 'robot_filter_enabled:=true',
+                     '-p', f'robot_filter_static_mask:={mask_path}'])
+    node = PointCloudNode()
+    try:
+        stamp = node.get_clock().now().to_msg()
+        depth = node.bridge.cv2_to_imgmsg(np.ones((2, 2), dtype=np.float32), encoding='32FC1')
+        depth.header.frame_id, depth.header.stamp = 'camera', stamp
+        info = CameraInfo(header=depth.header, width=2, height=2,
+                          k=[100., 0., 0., 0., 100., 0., 0., 0., 1.])
+        points, valid, _ = node.scene(depth, info)
+        np.testing.assert_array_equal(valid, [[False, True], [True, True]])
+        assert len(points) == 3
+        node.settings['robot_filter_enabled'] = False
+        points, valid, _ = node.scene(depth, info)
+        assert valid.all() and len(points) == 4
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+def test_default_robot_filter_uses_packaged_panda_meshes():
+    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=false', '-p', 'robot_filter_enabled:=true'])
+    node = PointCloudNode()
+    try:
+        assert {item['link'] for item in node.robot_geometry} == {'panda_hand', 'panda_leftfinger', 'panda_rightfinger'}
+        assert all(item['_triangles'].shape[1:] == (3, 3) for item in node.robot_geometry)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()

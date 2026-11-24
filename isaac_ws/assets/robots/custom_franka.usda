@@ -13,6 +13,16 @@ def "Franka" (
     prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Robots/FrankaRobotics/FrankaPanda/franka.usd@
 )
 {
+    over "panda_hand"
+    {
+        over "panda_finger_joint1"
+        {
+            # One drive squeezes through the asset's finger mimic constraint.
+            float drive:linear:physics:maxForce = 15
+            float drive:linear:physics:stiffness = 2000
+        }
+    }
+
     def Scope "Sensors"
     {
         def Xform "camera_wrist" (

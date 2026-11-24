@@ -5,6 +5,10 @@
 __pycache__/
 .pytest_cache/
 .venv/
+/third_party/GraspGen/
+/models/graspgen/
+/outputs/graspgen/
+/.cache/graspgen/
 # Local settings and credentials
 .env
 
@@ -18,6 +22,7 @@ isaac_ws/output/
 ros_ws/build/
 ros_ws/install/
 ros_ws/log/
+/ros_ws/target_map.npz
 
 # ML datasets, prepared tensors, experiments, predictions, and evaluation reports
 /ml_ws/datasets/

@@ -5,7 +5,7 @@ import numpy as np
 from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 from isaacsim.core.utils.semantics import add_update_semantics
 from isaacsim.core.utils.stage import add_reference_to_stage
-from pxr import PhysxSchema, Usd, UsdGeom, UsdPhysics
+from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics
 
 
 ROOT_PATH = '/World/SpawnedObjects'
@@ -44,8 +44,18 @@ def clear_objects(stage):
         stage.RemovePrim(ROOT_PATH)
 
 
-def prepare_object(stage, asset, path, index, rng, spread, surface_bounds=None, body_factory=SingleRigidPrim):
+def prepare_object(stage, asset, path, index, rng, spread, surface_bounds=None, body_factory=SingleRigidPrim, scale_factor=1.0):
+    if not np.isfinite(scale_factor) or scale_factor <= 0:
+        raise ValueError('Object scale factor must be finite and positive')
     prim = add_reference_to_stage(str(asset), path)
+    if scale_factor != 1:
+        xform = UsdGeom.Xformable(prim)
+        ops = [op for op in xform.GetOrderedXformOps() if op.GetOpType() == UsdGeom.XformOp.TypeScale]
+        if len(ops) > 1:
+            raise ValueError('Object has multiple scale operations')
+        op = ops[0] if ops else xform.AddScaleOp()
+        original = op.Get() or Gf.Vec3d(1)
+        op.Set(Gf.Vec3d(*[float(value * scale_factor) for value in original]))
     UsdPhysics.RigidBodyAPI.Apply(prim)
     physics = PhysxSchema.PhysxRigidBodyAPI.Apply(prim)
     physics.CreateSolverPositionIterationCountAttr(16)
@@ -85,7 +95,7 @@ def prepare_object(stage, asset, path, index, rng, spread, surface_bounds=None, 
     body.set_visibility(False)
     add_update_semantics(prim, 'object', type_label='class')
     metadata = {'id': index + 1, 'prim_path': path, 'asset': str(asset), 'asset_name': asset.stem,
-                'spawn_orientation_wxyz': quaternion.tolist(), 'drop_clearance_m': 0.015}
+                'spawn_orientation_wxyz': quaternion.tolist(), 'drop_clearance_m': 0.015, 'scale_factor': float(scale_factor)}
     return body, (xy, float(low[2]), quaternion), metadata
 
 

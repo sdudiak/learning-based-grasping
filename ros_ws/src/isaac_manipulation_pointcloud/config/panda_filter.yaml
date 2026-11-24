@@ -1,0 +1,10 @@
+- link: panda_hand
+  shape: mesh
+  mesh: package://moveit_resources_panda_description/meshes/collision/hand.stl
+- link: panda_leftfinger
+  shape: mesh
+  mesh: package://moveit_resources_panda_description/meshes/collision/finger.stl
+- link: panda_rightfinger
+  shape: mesh
+  mesh: package://moveit_resources_panda_description/meshes/collision/finger.stl
+  quaternion_xyzw: [0, 0, 1, 0]

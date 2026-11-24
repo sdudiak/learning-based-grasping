@@ -34,6 +34,20 @@ Visualization Manager:
       Color Transformer: FlatColor
       Color: 255; 70; 40
       Decay Time: 0.5
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Mapped object
+      Enabled: true
+      Topic:
+        Value: /pointcloud/target_map
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+      Style: Flat Squares
+      Size (m): 0.003
+      Color Transformer: FlatColor
+      Color: 40; 235; 145
+      Decay Time: 0
     - Class: rviz_default_plugins/PointStamped
       Name: Target centroid
       Enabled: true

@@ -114,11 +114,16 @@ class ObjectSpawnerExtension(omni.ext.IExt):
                 self._timeline.play()
                 await self._app.next_update_async()
 
-    def _release_bodies(self):
-        # Release tensor views before removing their physics actors.
+    def _release_simulation_view(self):
         if self._simulation_view is not None:
             self._simulation_view.invalidate()
             self._simulation_view = None
+        for body in self.bodies:
+            body.physics_view = None
+
+    def _release_bodies(self):
+        # Release tensor views before removing their physics actors.
+        self._release_simulation_view()
         for body in self.bodies:
             body.destroy()
         self.bodies = []
@@ -248,11 +253,23 @@ class ObjectSpawnerExtension(omni.ext.IExt):
                 await self._app.next_update_async()
             if self._result is None or not self._result['settled']:
                 raise RuntimeError(self._result['reason'] if self._result else 'Settling timeout')
-            for body, metadata in zip(self.bodies, self.objects):
-                position, orientation = body.get_world_pose()
+            settled_poses = [body.get_world_pose() for body in self.bodies]
+            self._tracker = None
+            self._physics_subscription = None
+            self._release_simulation_view()
+            # Commit after Stop so PhysX cannot restore the temporary parking poses.
+            self._timeline.stop()
+            await self._app.next_update_async()
+            if self._context.get_stage_id() != stage_id:
+                raise asyncio.CancelledError()
+            for body, metadata, (position, orientation) in zip(self.bodies, self.objects, settled_poses):
+                body.set_world_pose(position, orientation)
+                body.set_visibility(True)
                 body.set_default_state(position, orientation)
+                rigid = UsdPhysics.RigidBodyAPI(stage.GetPrimAtPath(body.prim_path))
+                rigid.CreateVelocityAttr().Set((0, 0, 0))
+                rigid.CreateAngularVelocityAttr().Set((0, 0, 0))
                 metadata.update(position=position.tolist(), orientation_wxyz=orientation.tolist())
-            self._set_status('ready', f'{len(self.objects)} objects settled')
             completed = True
         except asyncio.CancelledError:
             raise
@@ -273,6 +290,8 @@ class ObjectSpawnerExtension(omni.ext.IExt):
                         else:
                             self._timeline.pause()
                         await self._app.next_update_async()
+                    if completed and self._context.get_stage_id() == stage_id:
+                        self._set_status('ready', f'{len(self.objects)} objects settled')
 
     def _build_ui(self):
         import omni.ui as ui

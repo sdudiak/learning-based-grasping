@@ -58,15 +58,15 @@ class AssetTests(unittest.TestCase):
             modules['omni.kit'].app = modules['omni.kit.app']
             modules['omni.kit.app'].get_app = lambda: types.SimpleNamespace(post_quit=quit_codes.append)
 
-            def convert(src, staging, size):
+            def convert(src, staging, size, *, max_diagonal_cm):
                 staging.mkdir()
                 (staging / 'mesh.usd').write_text('new mesh')
                 if fail:
                     raise RuntimeError('conversion failed')
                 (staging / 'object.usd').write_text('new asset')
-                return 1.0
+                return {'scale_factor': 1.0}
 
-            arguments = types.SimpleNamespace(size_cm=10.0, overwrite=True)
+            arguments = types.SimpleNamespace(size_cm=10.0, max_diagonal_cm=None, overwrite=True)
             with patch.dict(sys.modules, modules), patch.multiple(
                 convert_assets, INPUT=root / 'raw', OUTPUT=root / 'converted'
             ), patch.object(convert_assets, 'arguments', return_value=arguments), patch.object(

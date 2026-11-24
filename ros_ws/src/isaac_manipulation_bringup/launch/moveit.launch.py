@@ -3,7 +3,8 @@ import xml.etree.ElementTree as ET
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -67,10 +68,17 @@ def generate_launch_description():
              remappings=feedback_remappings,
              condition=IfCondition(LaunchConfiguration('rviz'))),
     ]
+    spawners = []
     for controller in ['joint_state_broadcaster', 'panda_arm_controller', 'panda_hand_controller']:
         arguments = [controller, '-c', '/controller_manager', '--param-file', controllers]
         if controller == 'joint_state_broadcaster':
             arguments += ['--controller-ros-args', '--remap /joint_states:=/controller_joint_states']
-        nodes.append(Node(package='controller_manager', executable='spawner',
-                          arguments=arguments, output='screen'))
-    return LaunchDescription(nodes)
+        spawners.append(Node(package='controller_manager', executable='spawner',
+                             arguments=arguments, output='screen'))
+
+    clock = ExecuteProcess(cmd=['ros2', 'topic', 'echo', '/clock', 'rosgraph_msgs/msg/Clock',
+                                '--once', '--qos-reliability', 'best_effort'],
+                           name='wait_for_isaac_clock')
+    wait_for_clock = RegisterEventHandler(OnProcessExit(
+        target_action=clock, on_exit=lambda event, _: spawners if event.returncode == 0 else []))
+    return LaunchDescription([*nodes, wait_for_clock, clock])

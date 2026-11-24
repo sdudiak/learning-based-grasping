@@ -16,7 +16,9 @@ OUTPUT = ROOT / 'isaac_ws/assets/objects/gso/converted'
 
 def arguments():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--size-cm', required=True, type=float, help='Target longest bounding-box dimension in centimeters')
+    sizing = p.add_mutually_exclusive_group(required=True)
+    sizing.add_argument('--size-cm', type=float, help='Target longest bounding-box dimension in centimeters')
+    sizing.add_argument('--max-diagonal-cm', type=float, help='Maximum bounding-box diagonal in centimeters')
     p.add_argument('--overwrite', action='store_true', help='Overwrite existing converted assets')
     return p.parse_args()
 
@@ -26,7 +28,7 @@ def discover(root: Path) -> list[Path]:
     return [p for p in paths if not any(t in p.stem.lower() for t in ('collision', 'collider'))]
 
 
-def convert_asset(src: Path, directory: Path, size_cm: float) -> float:
+def convert_asset(src: Path, directory: Path, size_cm: float | None, *, max_diagonal_cm: float | None = None):
     import omni.kit.asset_converter as converter
     from pxr import Gf, PhysxSchema, Sdf, Usd, UsdGeom, UsdPhysics
 
@@ -67,8 +69,18 @@ def convert_asset(src: Path, directory: Path, size_cm: float) -> float:
     longest = max(extent)
     if not all(math.isfinite(value) for value in extent) or longest <= 0:
         raise ValueError(f'Cannot determine converted mesh bounds: {src}')
-    factor = (size_cm / 100.0) / longest
+    if max_diagonal_cm is None:
+        factor = (size_cm / 100.0) / longest
+        target = {'target_longest_cm': size_cm}
+    else:
+        factor = min(1.0, (max_diagonal_cm / 100.0) / math.hypot(*extent))
+        target = {'max_diagonal_cm': max_diagonal_cm}
     root.AddScaleOp(UsdGeom.XformOp.PrecisionDouble).Set(Gf.Vec3d(factor))
+    bounds.Clear()
+    dimensions = list(bounds.ComputeWorldBound(root.GetPrim()).ComputeAlignedRange().GetSize())
+    diagonal = math.hypot(*dimensions)
+    if max_diagonal_cm is not None and diagonal > max_diagonal_cm / 100.0 + 1e-9:
+        raise ValueError(f'Converted asset exceeds the {max_diagonal_cm:g} cm diagonal limit: {src}')
     UsdPhysics.RigidBodyAPI.Apply(root.GetPrim()).CreateRigidBodyEnabledAttr(True)
     for prim in meshes:
         UsdPhysics.CollisionAPI.Apply(prim).CreateCollisionEnabledAttr(True)
@@ -79,15 +91,17 @@ def convert_asset(src: Path, directory: Path, size_cm: float) -> float:
     output_layer.UpdateExternalReference(str(directory / 'mesh.usd'), './mesh.usd')
     if not output_layer.Export(str(directory / f'{directory.name}.usd')):
         raise RuntimeError(f'Could not save USD: {directory}')
-    return factor
+    return {**target, 'scale_factor': factor, 'dimensions_m': dimensions, 'diagonal_m': diagonal}
 
 
 def main():
     args = arguments()
     if not INPUT.is_dir():
         raise SystemExit(f'Input directory not found: {INPUT}')
-    if not math.isfinite(args.size_cm) or args.size_cm <= 0:
-        raise SystemExit('--size-cm must be positive')
+    option, value = ('--size-cm', args.size_cm) if args.max_diagonal_cm is None else (
+        '--max-diagonal-cm', args.max_diagonal_cm)
+    if not math.isfinite(value) or value <= 0:
+        raise SystemExit(f'{option} must be finite and positive')
     sources = discover(INPUT)
     if not sources:
         raise SystemExit(f'No OBJ files under {INPUT}')
@@ -103,22 +117,33 @@ def main():
         from isaacsim.core.utils.extensions import enable_extension
         enable_extension('omni.kit.asset_converter')
         OUTPUT.mkdir(parents=True, exist_ok=True)
+        manifest = OUTPUT / 'conversion_manifest.json'
+        previous = json.loads(manifest.read_text(encoding='utf-8')) if manifest.exists() else []
+        previous_by_usd = {entry['usd']: entry for entry in previous if 'usd' in entry}
         report = []
         print(f'Found {len(sources)} source OBJ files')
         for i, src in enumerate(sources, start=1):
             object_name = src.relative_to(INPUT).parts[0]
             directory = OUTPUT / object_name
             final_usd = directory / f'{directory.name}.usd'
-            if final_usd.exists() and not args.overwrite:
+            usd = str(final_usd.relative_to(OUTPUT))
+            entry = previous_by_usd.get(usd, {})
+            is_current = final_usd.exists() and (
+                args.max_diagonal_cm is None or (
+                    entry.get('max_diagonal_cm') == args.max_diagonal_cm
+                    and 'diagonal_m' in entry
+                    and final_usd.stat().st_mtime_ns <= manifest.stat().st_mtime_ns
+                )
+            )
+            if is_current and not args.overwrite:
                 print(f'[{i}/{len(sources)}] SKIP {final_usd}')
-                report.append({'source': str(src.relative_to(INPUT)),
-                               'usd': str(final_usd.relative_to(OUTPUT)), 'cached': True})
+                report.append({**entry, 'source': str(src.relative_to(INPUT)), 'usd': usd, 'cached': True})
                 continue
             print(f'[{i}/{len(sources)}] {src.relative_to(INPUT)}', flush=True)
             try:
                 with tempfile.TemporaryDirectory(prefix='.convert_', dir=OUTPUT) as temp:
                     staging = Path(temp) / object_name
-                    factor = convert_asset(src, staging, args.size_cm)
+                    sizing = convert_asset(src, staging, args.size_cm, max_diagonal_cm=args.max_diagonal_cm)
                     backup = Path(temp) / 'previous'
                     if directory.exists():
                         directory.rename(backup)
@@ -128,16 +153,11 @@ def main():
                         if backup.exists():
                             backup.rename(directory)
                         raise
-                usd = final_usd
-                report.append({'source': str(src.relative_to(INPUT)),
-                               'usd': str(usd.relative_to(OUTPUT)),
-                               'target_longest_cm': args.size_cm,
-                               'scale_factor': factor})
-                print(f'  -> {usd} (factor {factor:.6g})')
+                report.append({'source': str(src.relative_to(INPUT)), 'usd': usd, **sizing})
+                print(f"  -> {usd} (factor {sizing['scale_factor']:.6g})")
             except Exception as e:
                 print(f'  ERROR: {e}', file=sys.stderr)
                 report.append({'source': str(src.relative_to(INPUT)), 'error': str(e)})
-        manifest = OUTPUT / 'conversion_manifest.json'
         manifest.write_text(json.dumps(report, indent=2), encoding='utf-8')
         success = sum('usd' in item for item in report)
         failures = sum('error' in item for item in report)

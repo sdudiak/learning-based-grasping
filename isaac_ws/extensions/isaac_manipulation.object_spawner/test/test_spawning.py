@@ -19,6 +19,7 @@ def run():
         import carb.settings
         import numpy as np
         import omni.kit.app
+        import omni.physx
         import omni.timeline
         import omni.usd
         from pxr import Usd, UsdGeom, UsdPhysics
@@ -92,6 +93,23 @@ def run():
                 positions = np.array([body.get_world_pose()[0] for body in extension.bodies])
                 self.assertTrue(np.all(positions[:, 2] > 0.49))
                 self.assertTrue(np.all(np.abs(positions[:, 0] - 0.5) < 0.4))
+                timeline = omni.timeline.get_timeline_interface()
+                timeline.stop()
+                app.update()
+                for body, expected in zip(extension.bodies, positions):
+                    self.assertTrue(stage.GetPrimAtPath(body.prim_path))
+                    self.assertEqual(UsdGeom.Imageable(stage.GetPrimAtPath(body.prim_path)).ComputeVisibility(), 'inherited')
+                    np.testing.assert_allclose(body.get_world_pose()[0], expected, atol=1e-5)
+                timeline.play()
+                app.update()
+                omni.physx.get_physx_interface().reset_simulation()
+                app.update()
+                timeline.stop()
+                app.update()
+                for body, expected in zip(extension.bodies, positions):
+                    np.testing.assert_allclose(body.get_world_pose()[0], expected, atol=1e-5)
+                timeline.play()
+                app.update()
                 marker = UsdGeom.Cube.Define(stage, '/World/KeepRigid')
                 marker.CreateSizeAttr(0.05)
                 UsdPhysics.CollisionAPI.Apply(marker.GetPrim())
@@ -104,6 +122,7 @@ def run():
                 updates_until(lambda: extension._task.done())
                 self.assertEqual(settings.get(prefix + '/status'), 'ready', settings.get(prefix + '/last_error'))
                 self.assertEqual(len(extension.objects), 1)
+                persistent_body.initialize()
                 self.assertTrue(np.isfinite(persistent_body.get_linear_velocity()).all())
                 np.testing.assert_allclose(persistent_body.get_world_pose()[0], [-1., 0., 1.])
                 extension.spawn()
@@ -112,6 +131,7 @@ def run():
                 updates_until(lambda: extension._task.done())
                 self.assertEqual(settings.get(prefix + '/status'), 'idle')
                 self.assertFalse(stage.GetPrimAtPath(ROOT_PATH))
+                persistent_body.initialize()
                 self.assertTrue(np.isfinite(persistent_body.get_linear_velocity()).all())
                 table.GetPrim().GetAttribute('xformOp:scale').Set((0.01, 0.01, 0.1))
                 extension.spawn()

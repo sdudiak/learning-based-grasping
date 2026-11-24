@@ -1,3 +1,5 @@
 - Do not overcomment. Add comments only when necessary
 - Do not generate unnecessary code. Add features only when necessary
 - Edit READMEs only when specifically asked
+- When creating ros packages and writting ros nodes, keep the ros part and the implementation part in separate files if possible
+- write clean readable code. No huge functions no multiple nested loops

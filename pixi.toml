@@ -23,6 +23,8 @@ torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/c
 isaacsim = { version = "==5.1.0", extras = ["all", "extscache"] }
 
 [tasks]
+graspgen-setup = "python scripts/graspgen/setup.py"
+graspgen-test-pipeline = "python scripts/graspgen/run.py pipeline_test_cli"
 save-masked-images = "python isaac_ws/dataset_generation/segmentation/save_masked_images.py"
 generate-dataset = "env -u PYTHONPATH -u OLD_PYTHONPATH python -u isaac_ws/dataset_generation/segmentation/generate_dataset.py"
 download-gso-objects = "python scripts/download_gso_objects.py"
@@ -110,3 +112,6 @@ cmd = "python scripts/ros_segmentation.py"
 
 [feature.segmentation.tasks.ros-perception]
 cmd = "python scripts/ros_perception.py"
+
+[feature.segmentation.tasks.ros-full-system]
+cmd = "python -c 'from scripts.ros_segmentation import main; main(full_system=True)'"

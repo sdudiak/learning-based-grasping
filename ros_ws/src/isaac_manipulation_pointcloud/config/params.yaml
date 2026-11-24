@@ -22,3 +22,11 @@ pointcloud:
     voxel_resolution: 0.0
     debug: false
     visualization: true
+    robot_filter_enabled: false
+    robot_filter_method: geometry
+    robot_filter_geometry: ''
+    robot_filter_tolerance: 0.002
+    robot_filter_static_mask: ''
+    robot_filter_debug: false
+    robot_filter_debug_topic: /pointcloud/robot_exclusion_mask
+    robot_filter_links: [panda_hand, panda_leftfinger, panda_rightfinger]

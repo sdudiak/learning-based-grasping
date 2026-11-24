@@ -1,0 +1,86 @@
+diff --git a/grasp_gen/grasp_server.py b/grasp_gen/grasp_server.py
+index 4699ef7..93bd974 100644
+--- a/grasp_gen/grasp_server.py
++++ b/grasp_gen/grasp_server.py
+@@ -17,7 +17,6 @@ from pathlib import Path
+ 
+ from grasp_gen.dataset.dataset import collate
+ from grasp_gen.models.grasp_gen import GraspGen
+-from grasp_gen.models.m2t2 import M2T2
+ from grasp_gen.utils.point_cloud_utils import knn_points, point_cloud_outlier_removal
+ from grasp_gen.robot import load_control_points_for_visualization
+ from grasp_gen.utils.logging_config import get_logger
+@@ -97,6 +96,7 @@ class GraspGenSampler:
+         self.cfg = cfg
+         # Initialize model and load checkpoint
+         if cfg.eval.model_name == "m2t2":
++            from grasp_gen.models.m2t2 import M2T2
+             model = M2T2.from_config(cfg.m2t2)
+             ckpt = torch.load(cfg.eval.checkpoint)
+             model.load_state_dict(ckpt["model"])
+diff --git a/grasp_gen/models/discriminator.py b/grasp_gen/models/discriminator.py
+index b2c12bc..a0e4190 100644
+--- a/grasp_gen/models/discriminator.py
++++ b/grasp_gen/models/discriminator.py
+@@ -25,7 +25,7 @@ from grasp_gen.models.model_utils import (
+     load_pretrained_checkpoint_to_dict,
+     offset2batch,
+ )
+-from grasp_gen.models.ptv3.ptv3 import PointTransformerV3
++from grasp_gen.models.ptv3.compat import PointTransformerV3
+ from grasp_gen.robot import get_gripper_info
+ from grasp_gen.utils.logging_config import get_logger
+ from grasp_gen.models.model_utils import load_pretrained_checkpoint_to_dict
+diff --git a/grasp_gen/models/generator.py b/grasp_gen/models/generator.py
+index cd11541..f620a61 100644
+--- a/grasp_gen/models/generator.py
++++ b/grasp_gen/models/generator.py
+@@ -28,7 +28,7 @@ from grasp_gen.models.model_utils import (
+     load_pretrained_checkpoint_to_dict,
+     offset2batch,
+ )
+-from grasp_gen.models.ptv3.ptv3 import PointTransformerV3
++from grasp_gen.models.ptv3.compat import PointTransformerV3
+ from grasp_gen.robot import get_gripper_info
+ from grasp_gen.utils.logging_config import get_logger
+ 
+diff --git a/grasp_gen/models/grasp_gen.py b/grasp_gen/models/grasp_gen.py
+index dc537e8..b3b9178 100644
+--- a/grasp_gen/models/grasp_gen.py
++++ b/grasp_gen/models/grasp_gen.py
+@@ -96,12 +96,12 @@ class GraspGen(nn.Module):
+         logger.info(
+             f"Loading generator checkpoint from {grasp_generator_ckpt_filepath}"
+         )
+-        ckpt = torch.load(grasp_generator_ckpt_filepath, map_location="cpu")
++        ckpt = torch.load(grasp_generator_ckpt_filepath, map_location="cpu", weights_only=False)
+         self.grasp_generator.load_state_dict(ckpt["model"])
+ 
+         logger.info(
+             f"Loading discriminator checkpoint from {grasp_discriminator_ckpt_filepath}"
+         )
+-        ckpt = torch.load(grasp_discriminator_ckpt_filepath, map_location="cpu")
++        ckpt = torch.load(grasp_discriminator_ckpt_filepath, map_location="cpu", weights_only=False)
+ 
+         self.grasp_discriminator.load_state_dict(ckpt["model"])
+diff --git a/grasp_gen/models/model_utils.py b/grasp_gen/models/model_utils.py
+index 759d000..cf4ea5c 100644
+--- a/grasp_gen/models/model_utils.py
++++ b/grasp_gen/models/model_utils.py
+@@ -17,7 +17,6 @@ import numpy as np
+ import torch
+ import torch.nn as nn
+ 
+-from grasp_gen.models.pointnet.pointnet2_modules import PointnetSAModule
+ from grasp_gen.utils.logging_config import get_logger
+ 
+ logger = get_logger(__name__)
+@@ -134,6 +133,8 @@ class PointNetPlusPlus(nn.Module):
+     def __init__(
+         self, activation="relu", bn=False, output_embedding_dim=512, feature_dim=-1
+     ):
++        from grasp_gen.models.pointnet.pointnet2_modules import PointnetSAModule
++
+         mlp = []
+         for elem in OBJ_MLPS:
+             mlp.append(elem.copy())

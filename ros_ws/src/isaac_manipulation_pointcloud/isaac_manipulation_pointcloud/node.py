@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from uuid import uuid4
 
 import numpy as np
 import yaml
@@ -10,10 +11,11 @@ import rclpy
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import CameraInfo, Image, PointCloud2
 from sensor_msgs_py.point_cloud2 import create_cloud_xyz32
+from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformException, TransformListener
 from visualization_msgs.msg import Marker
@@ -21,6 +23,7 @@ from visualization_msgs.msg import Marker
 from isaac_manipulation_pointcloud_interfaces.srv import SelectInstance, SelectTarget
 from .processing import ObservationCache, bounds, candidates, partition, project_depth, transform_points
 from .selection import Selection
+from .self_filter import exclusion_mask, validate_geometry
 
 
 def stamp_ns(stamp):
@@ -48,6 +51,37 @@ class PointCloudNode(Node):
             raise ValueError('Invalid depth range or output frame')
         if p['input_cloud_topic']:
             raise ValueError('This camera integration uses aligned depth; input_cloud_topic must be empty')
+        self.robot_geometry = []
+        self.robot_static_mask = None
+        if p['robot_filter_enabled']:
+            if p['robot_filter_method'] not in ('primitives', 'geometry'):
+                raise ValueError('robot_filter_method must be geometry or primitives')
+            if not np.isfinite(p['robot_filter_tolerance']) or p['robot_filter_tolerance'] < 0:
+                raise ValueError('robot_filter_tolerance must be finite and nonnegative')
+            geometry_path = p['robot_filter_geometry']
+            if not geometry_path and not p['robot_filter_static_mask']:
+                geometry_path = path.parent / 'panda_filter.yaml'
+            if geometry_path:
+                geometry_path = Path(geometry_path)
+                geometry = yaml.safe_load(geometry_path.read_text())
+                for item in geometry:
+                    if item.get('shape') == 'mesh':
+                        mesh = item['mesh']
+                        if mesh.startswith('package://'):
+                            package, relative = mesh[len('package://'):].split('/', 1)
+                            item['mesh'] = str(Path(get_package_share_directory(package)) / relative)
+                        elif not Path(mesh).is_absolute():
+                            item['mesh'] = str(geometry_path.parent / mesh)
+                self.robot_geometry = validate_geometry(geometry)
+                links = set(p['robot_filter_links'])
+                if links:
+                    self.robot_geometry = [item for item in self.robot_geometry if item['link'] in links]
+            if p['robot_filter_static_mask']:
+                self.robot_static_mask = np.load(p['robot_filter_static_mask'], allow_pickle=False)
+                if self.robot_static_mask.ndim != 2 or self.robot_static_mask.dtype != bool:
+                    raise ValueError('Static exclusion mask must be a 2D boolean NPY array')
+            if not self.robot_geometry and self.robot_static_mask is None:
+                raise ValueError('Enabled robot filtering requires geometry or a static mask')
         self.age = int(p['maximum_observation_age'] * 1e9)
         def cache():
             return ObservationCache(p['cache_capacity'], self.age, int(p['synchronization_tolerance'] * 1e9))
@@ -59,8 +93,13 @@ class PointCloudNode(Node):
         self.bridge = CvBridge()
         self.tf = Buffer(cache_time=Duration(seconds=p['maximum_observation_age'] + 2))
         self.listener = TransformListener(self.tf, self)
+        self.robot_debug = (self.create_publisher(Image, p['robot_filter_debug_topic'], 1)
+                            if p['robot_filter_debug'] else None)
         self.environment = self.create_publisher(PointCloud2, p['environment_topic'], 1)
         self.target = self.create_publisher(PointCloud2, p['target_topic'], 1)
+        selection_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.selection_id = self.create_publisher(String, '/pointcloud/selection_id', selection_qos)
+        self.selection_id.publish(String())
         self.centroid = self.create_publisher(PointStamped, p['centroid_topic'], 1)
         self.box = self.create_publisher(Marker, p['bounding_box_topic'], 1)
         self.create_subscription(Image, p['depth_topic'], self.depth_callback, qos_profile_sensor_data)
@@ -82,6 +121,7 @@ class PointCloudNode(Node):
             self.pending_depths.clear()
             self.latest = None
             self.selection.clear()
+            self.selection_id.publish(String())
             self.delete_marker(message.header)
         self.last_stamp = stamp
         self.depths.add(stamp, message)
@@ -113,6 +153,27 @@ class PointCloudNode(Node):
         if depth.encoding == '16UC1':
             image *= 0.001
         points, valid = project_depth(image, info.k, self.settings['minimum_depth'], self.settings['maximum_depth'])
+        if self.settings.get('robot_filter_enabled', False):
+            excluded = np.zeros(valid.shape, dtype=bool)
+            if self.robot_static_mask is not None:
+                if self.robot_static_mask.shape != valid.shape:
+                    raise ValueError('Static robot mask and depth dimensions differ')
+                excluded |= self.robot_static_mask
+            transforms = {}
+            for link in {item['link'] for item in self.robot_geometry}:
+                t = self.tf.lookup_transform(link, depth.header.frame_id, Time.from_msg(depth.header.stamp)).transform
+                transforms[link] = ([t.translation.x, t.translation.y, t.translation.z],
+                                    [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w])
+            if self.robot_geometry:
+                excluded |= exclusion_mask(points, self.robot_geometry, transforms,
+                                           self.settings['robot_filter_tolerance'])
+            valid &= ~excluded
+            if self.robot_debug is not None:
+                message = self.bridge.cv2_to_imgmsg(excluded.astype(np.uint8) * 255, encoding='mono8')
+                message.header = deepcopy(depth.header)
+                self.robot_debug.publish(message)
+            if self.settings['debug']:
+                self.get_logger().info(f'Robot filter excluded {np.count_nonzero(excluded)} pixels')
         points = self.transform(points[valid], depth.header.frame_id, depth.header.stamp)
         header = deepcopy(depth.header)
         header.frame_id = self.settings['output_frame']
@@ -206,6 +267,7 @@ class PointCloudNode(Node):
             if label is None:
                 raise ValueError('No unique candidate within selection distance')
             response.success, response.message = True, f'Selected instance {label}'
+            self.selection_id.publish(String(data=uuid4().hex))
             self.publish_observation(self.latest[1])
         except (TransformException, ValueError) as exc:
             response.success, response.message = False, str(exc)
@@ -222,11 +284,13 @@ class PointCloudNode(Node):
             response.success = label == request.instance_id
             response.message = 'Selected' if response.success else 'Ambiguous instance'
             if response.success:
+                self.selection_id.publish(String(data=uuid4().hex))
                 self.publish_observation(observation)
         return response
 
     def clear_callback(self, request, response):
         self.selection.clear()
+        self.selection_id.publish(String())
         if self.latest is not None:
             points, _, _, header = self.latest[1]
             self.delete_marker(header)

@@ -10,4 +10,7 @@ setup(name=name, version='0.1.0', packages=find_packages(exclude=['test']),
       install_requires=['setuptools', 'numpy', 'PyYAML'], tests_require=['pytest'],
       maintainer='Staszek', maintainer_email='sdudiak01@gmail.com',
       description='Timestamped visible target and environment point clouds.', license='Apache-2.0',
-      entry_points={'console_scripts': ['pointcloud = isaac_manipulation_pointcloud.node:main']})
+      entry_points={'console_scripts': [
+          'pointcloud = isaac_manipulation_pointcloud.node:main',
+          'target_mapper = isaac_manipulation_pointcloud.mapper_node:main',
+      ]})
